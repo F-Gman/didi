@@ -1,14 +1,14 @@
 # didi
 The system must support distributed ride-request processing, driver discovery, passenger-driver matching, trip coordination, and location updates. It must demonstrate communication among distributed components, peer integration, coordination mechanisms, replication, transactions, and failure recovery.
 
-##Required Software
+## 1.Required Software
 - Python 3.6 or newer.
 - Three seperate terminal windows open at once
 
-##Installing Dependencies
+## 2.Installing Dependencies
 - No installation needed. Currently the project only uses Python Standard Library
 
-##Starting Each Service
+## 3.Starting Each Service
 - Start the **Matching Service** and the **Order Service** *before* running `client.py`. If either service is not running, the order cannot be fully processed.
 - Start the services in this order, each in its own terminal.
 
