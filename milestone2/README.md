@@ -1,215 +1,171 @@
-# DiDi - Milestone 2 Communication Demo
+# DiDi Food Delivery — Milestone 2
 
-Four Python programs demonstrate a food-order workflow. The order service
-also acts as the pub-sub broker and multicast sender; no separate broker file
-is required. All programs use Python's standard library.
+This project demonstrates communication between a customer, a restaurant,
+two drivers, and an order service. It uses Python sockets to show TCP
+request-reply, JSON marshalling, publish-subscribe updates, and UDP multicast.
+All five processes run on the same computer. Cooking and delivery are simulated
+by pressing Enter in the terminal.
 
 ## Requirements
 
 - Python 3.9 or newer.
-- macOS or Linux terminals. The interruptible keyboard prompt uses `select`
-  on standard input; this version does not support the Windows console.
-- Run all processes on the same computer. TCP uses localhost port 6000;
-  UDP multicast uses group 224.1.1.1, port 5007, on the loopback interface.
-- Allow local socket connections when the operating system requests access.
+- macOS or Linux terminals. The keyboard prompts use `select`, so this version
+  does not support the Windows console.
+- Five terminal windows opened in the project folder.
 
-There are no extra Python packages to install.
+Only Python's standard library is used. No extra packages need to be installed.
 
-## Files and roles
+## Files
 
-| File | Role |
+| File | Purpose |
 | --- | --- |
-| `order_service.py` | Stores demo orders in memory, handles requests, publishes events, and multicasts order offers |
-| `customer.py` | Places order 8801 and subscribes to status updates |
-| `restaurant.py` | Subscribes to updates and reports when cooking is finished |
-| `driver.py` | Joins the multicast group, subscribes to events, claims the order, and reports delivery |
+| `order_service.py` | Handles requests, stores orders in memory, publishes updates, and sends multicast offers. |
+| `customer.py` | Places an order and receives updates until delivery is confirmed. |
+| `restaurant.py` | Receives the order and reports when the food is ready. |
+| `driver.py` | Receives an order offer, claims the order, and reports delivery. Run this file twice with different driver names. |
 
-`DEMO_ORDER_ID = 8801` is intentionally fixed for this single-order exercise.
-The service rejects a duplicate order instead of overwriting its state.
+## How to run
 
-## Start the demo
+Run each command in a separate terminal, in this order:
 
-Open five terminal windows in this folder. If your computer uses `python`
-instead of `python3`, replace the command name below.
+```bash
+# Terminal 1
+python3 order_service.py
 
-1. Terminal 1: `python3 order_service.py`
-2. Terminal 2: `python3 restaurant.py`
-3. Terminal 3: `python3 driver.py Driver_A`
-4. Terminal 4: `python3 driver.py Driver_B`
-5. Wait until both drivers print `Joined driver group; waiting for orders`.
-6. Terminal 5: `python3 customer.py`
+# Terminal 2
+python3 restaurant.py
 
-Then complete the workflow:
+# Terminal 3
+python3 driver.py An
 
-1. The restaurant first displays `Waiting for new orders...`. When the customer
-   places order 8801, the service publishes `ORDER_CREATED`. The restaurant
-   displays the order and its food items, followed by `Press Enter when cooking
-   is finished`. Both drivers also receive the multicast order offer.
-2. Press Enter in Driver_A's terminal to claim the order.
-3. Driver_B receives `ORDER_TAKEN` and exits this single-order demo.
-4. Driver_A waits for the kitchen. It cannot report delivery yet.
-5. Press Enter in the restaurant terminal when cooking is finished.
-6. The restaurant sends a request; the service replies and publishes
-   `ORDER_READY_FOR_PICKUP` to the connected subscribers.
-7. Driver_A displays the food-ready prompt. After the simulated delivery,
-   press Enter in Driver_A's terminal again.
-8. The service verifies the driver and order state, replies, and publishes
-   `ORDER_DELIVERED`. Customer, restaurant, and Driver_A finish.
+# Terminal 4
+python3 driver.py Alice
+```
 
-The service remains running. To repeat a fresh demo, stop the service with
-Ctrl+C, restart it, and restart the other four processes in the order above.
-This clears the in-memory order 8801.
+Wait until both drivers show `Joined driver group; waiting for orders`.
+Then start the customer in the fifth terminal:
 
-## Clean logs and detailed serialization
+```bash
+# Terminal 5
+python3 customer.py
+```
 
-The default `SHOW_DETAILS = False` prints short action logs with local-time
-timestamps. Full dates and timestamps also appear in message fields where
-provided. For the serialization portion of your video, change the setting
-to `True` in `order_service.py`, then restart the demo. You can also enable
-it in a client file to show that client's marshalling.
+If your Python command is `python`, use it instead of `python3`.
 
-Detailed output shows the Python dictionary before marshalling, UTF-8 JSON
-bytes after marshalling, and the restored dictionary after unmarshalling.
-Switch it back to `False` for the normal workflow demonstration.
+## Demo steps
 
-## Message examples
+1. The customer places order 8801. The service confirms the order, publishes
+   `ORDER_CREATED`, and sends a multicast offer to both drivers.
+2. The restaurant displays the order and food items. Both drivers receive
+   the offer.
+3. Press Enter in An's terminal to claim the order. The service assigns An
+   and publishes `ORDER_TAKEN`. Alice receives the update and exits.
+4. Press Enter in the restaurant terminal when cooking is finished. The
+   service publishes `ORDER_READY_FOR_PICKUP`.
+5. An receives the food-ready update. After the simulated delivery, press
+   Enter in An's terminal again.
+6. The service confirms delivery and publishes `ORDER_DELIVERED`. The customer,
+   restaurant, and An finish. The service stays running.
+
+The order ID is fixed at 8801. To repeat the demo, stop the service with Ctrl+C,
+restart it, and restart the other processes in the same order. Restarting the
+service clears its stored orders. Submitting order 8801 again without restarting
+is rejected as a duplicate.
+
+## Communication
 
 ### TCP request-reply
 
-The customer sends a structured request:
+The service listens on `127.0.0.1:6000`. A client opens a connection, sends one
+command, receives a reply, and closes the connection. Commands include
+`PLACE_ORDER`, `ACCEPT_ORDER`, `UPDATE_ORDER_STATUS`, and `COMPLETE_DELIVERY`.
+
+For example, the customer sends the following request. The timestamp is an
+example; the running program creates a new timestamp.
 
 ```json
-{"action":"PLACE_ORDER","order_id":8801,"customer_name":"Jordan Smith","restaurant":"DiDi Express Burger","items":["Bacon Cheese Burger","Vanilla Milkshake"],"timestamp":"2026-10-11T22:00:00.000"}
+{
+  "action": "PLACE_ORDER",
+  "order_id": 8801,
+  "customer_name": "Jordan Smith",
+  "restaurant": "DiDi Express Burger",
+  "items": ["Bacon Cheese Burger", "Vanilla Milkshake, American Fries"],
+  "timestamp": "2026-10-12T00:00:00.000"
+}
 ```
 
-The service replies:
+The service replies with `ORDER_CONFIRMED` when the order is accepted.
 
-```json
-{"status":"ORDER_CONFIRMED","order_id":8801,"message":"Order #8801 accepted","timestamp":"2026-10-11T22:00:00.001"}
-```
+### Marshalling
 
-### Pub-sub
+`marshal()` converts a Python dictionary to JSON using `json.dumps()`, adds a
+newline, and encodes it as UTF-8 bytes. The receiver reads a complete message,
+decodes the bytes, and uses `json.loads()` to restore the dictionary.
 
-Subscribers first send `SUBSCRIBE_UPDATES` and receive a `SUBSCRIBED` ACK.
-They then keep that TCP connection open for pushed events. The first event is
-`ORDER_CREATED`, with the customer name, restaurant, food items, and ACCEPTED
-status. The restaurant waits for this event before offering the cooking prompt.
-When a driver claims the order, the service publishes:
+TCP is a byte stream, so the final newline marks the end of each message.
+A buffered reader handles messages that arrive in pieces or together.
+Messages are limited to 16,384 bytes.
 
-```json
-{"event_type":"ORDER_TAKEN","order_id":8801,"payload":{"assigned_driver":"Driver_A","status":"ACCEPTED"},"published_at":"2026-10-11T22:00:01.000"}
-```
+The current settings are `SHOW_DETAILS = True` in the customer, driver, and
+service files, and `False` in the restaurant file. Set it to `True` in a file
+to show its marshalling and unmarshalling details. Set it to `False` for shorter
+logs, then restart that program. A displayed `b'...'` indicates Python bytes.
 
-All subscribers share one order-update channel in this small demo. Client
-code filters events by the demo order ID. There is no topic-filtering system.
+### Publish-subscribe
+
+The service also acts as the pub-sub broker. Each subscriber sends
+`SUBSCRIBE_UPDATES` and receives a `SUBSCRIBED` acknowledgment. It keeps this
+separate TCP connection open to receive events.
+
+Events include `ORDER_CREATED`, `ORDER_TAKEN`, `ORDER_READY_FOR_PICKUP`, and
+`ORDER_DELIVERED`. The service sends events on one shared channel, and clients
+handle them according to the order ID and event type. The restaurant waits for
+`ORDER_CREATED` before showing the cooking prompt.
 
 ### Group communication
 
-The service sends one UDP datagram to the multicast group:
+The service sends one UDP order offer to multicast group `224.1.1.1:5007`.
+Both drivers join the group with `IP_ADD_MEMBERSHIP`. The interface is set to
+`127.0.0.1` for this local demo.
 
-```json
-{"communication_type":"GROUP_MULTICAST","target_group":"DRIVERS_ZONE_A","order_id":8801,"restaurant":"DiDi Express Burger","destination":"1250 Bellflower Blvd, Long Beach, CA","timestamp":"2026-10-11T22:00:00.002"}
-```
+Both drivers must join before the customer places the order because offers
+are not saved or replayed. Drivers claim the order through TCP. The service
+uses a local thread lock to prevent the same order from being assigned twice.
 
-The two driver processes join the same group and receive the offer. Start
-both drivers before placing the order because multicast offers are not saved.
+## Failure demo
 
-## Serialization and TCP message boundaries
+### Service unavailable
 
-`marshal()` uses `json.dumps()` and UTF-8 encoding. `unmarshal()` uses UTF-8
-decoding and `json.loads()`. Each TCP message ends with a newline. A persistent
-buffered reader reads one complete line at a time, so partial packets and
-multiple messages in one TCP read do not break the JSON protocol.
+With the service stopped, run `customer.py`. It should report a connection
+failure and exit instead of continuing the order.
 
-Messages are limited to 16384 bytes. JSON string newlines are escaped by
-`json.dumps()`, so they do not accidentally create additional message boundaries.
+### Service stops during an order
 
-## Reproduce failure checks
+Start the normal demo and let An claim the order. Leave the restaurant waiting
+to finish cooking, then press Ctrl+C in the service terminal.
 
-### Service unavailable at startup
+The customer, restaurant, and An should detect the closed TCP connection and
+exit without reporting successful delivery. Alice has already exited after
+An claimed the order. The keyboard waits can end without another Enter press.
 
-Stop the service and launch `customer.py`. It should show a clear connection
-failure and exit with an error instead of printing a traceback.
+This demonstrates connection-loss detection. It does not demonstrate automatic
+recovery or confirm that the order was cancelled.
 
-### Service disconnects during the demo
+### One subscriber stops
 
-Start the normal demo and leave Driver_A waiting for the kitchen. Stop the
-service with Ctrl+C. Customer, restaurant, and drivers should detect the closed
-TCP subscription and exit with a connection-loss message. They must not claim
-that the order was delivered. Restaurant and driver keyboard waits can stop
-without the user having to press Enter.
+Start the normal demo. After both drivers receive the offer, stop Alice with
+Ctrl+C before either driver claims it. Continue with An, the restaurant, and
+the customer. They should still receive updates and finish the order.
 
-This tests an observable TCP disconnect. It does not test a network blackhole
-where the TCP connection stays open but packets never arrive.
+## Limitations
 
-### One subscriber disconnects
-
-Start the demo with two drivers. Stop Driver_B before anyone claims the order.
-Continue with Driver_A, restaurant, and customer. Remaining subscribers should
-still receive the order events and complete their workflow.
-
-### Restaurant reports an unknown order
-
-Start only the service. In another terminal, simulate an invalid kitchen update:
-
-```bash
-python3 -c 'import restaurant; print(restaurant.send_request({"action":"UPDATE_ORDER_STATUS","order_id":8801,"status":"READY_FOR_PICKUP"}))'
-```
-
-The service should return an error saying the order does not exist. The normal
-restaurant UI waits for a new-order event and does not offer this action early.
-
-### Duplicate order
-
-Start a normal demo. While the first customer waits, run `customer.py` again
-in another terminal. The second submission should be rejected because order
-8801 already exists. The original assignment and state must remain intact.
-
-### Invalid delivery request
-
-With order 8801 present, run this in a separate terminal to simulate an
-unassigned driver trying to complete it:
-
-```bash
-python3 -c 'import driver; print(driver.send_request({"action":"COMPLETE_DELIVERY","order_id":8801,"driver_name":"NotAssigned"}))'
-```
-
-The response should contain `"status": "ERROR"`. A completion request from
-the assigned driver before the food is ready is also rejected by the service.
-Driver_A's normal UI already waits for the food-ready event before offering
-the delivery prompt.
-
-## What these mechanisms prove
-
-- Three-second socket timeouts bound connection and request-reply waits.
-- A disconnected event listener signals the main thread to stop waiting.
-- Subscription ACKs confirm registration before the app proceeds.
-- A lock prevents two local service threads from assigning the same order.
-- Validation rejects unknown orders, duplicates, invalid transitions, and
-  delivery reports whose driver name does not match the assignment.
-
-Driver-name validation is a demo consistency check, not authentication.
-The lock is local to one central service, not distributed mutual exclusion.
-
-## Limits and remaining submission work
-
-- The central service is a single point of failure. It has no replica or failover.
-- Orders live in memory and are lost when the service restarts.
-- There is no automatic reconnect, event replay, durable queue, or recovery of
-  interrupted orders. Restarting the processes starts a fresh demo.
-- There are no automatic request retries. If a reply is lost, a request may
-  already have changed the order; its outcome can be unknown to the sender.
-- Persistent subscriptions have no heartbeat. A silent network failure can
-  leave a subscriber waiting; only an observable socket failure stops it.
-- UDP multicast has no ACK, retransmission, or delivery guarantee.
-- The kitchen-ready action and physical delivery are simulated by Enter presses.
-- State changes and event sending are serialized for this low-volume exercise.
-  A slow subscriber can delay other work up to its send timeout.
-- Run input prompts in macOS/Linux terminals, not an IDE console without a
-  selectable standard-input stream.
-- The business scope still needs clarification: the syllabus title says food
-  delivery but describes ride matching. This code follows the current food workflow.
-
-The final submission still needs your PDF report, video, source repository,
-screenshots/logs, and contribution table. Use actual runs as evidence and
-distinguish disconnect handling from automatic recovery in the report.
+- Orders are stored in memory and are lost when the service restarts.
+- The service has no replica, automatic failover, or automatic reconnection.
+- Events and multicast offers are not replayed for late subscribers.
+- UDP multicast does not guarantee delivery and has no acknowledgment or retry.
+- Request-reply operations use a three-second socket timeout. Idle subscriptions
+  have no heartbeat, so a silent network failure may leave them waiting.
+- Driver-name checks are not authentication. The assignment lock only protects
+  threads inside the central service.
+- If a reply is lost, the client may not know whether the service accepted its
+  request. Automatic request retries are not implemented.
