@@ -1,0 +1,25 @@
+{
+  "restaurant_id": "r4",
+  "name": "DiDi Chicken Corner",
+  "address": "400 Chicken Lane",
+  "menu": [
+    {
+      "item_id": "chicken",
+      "name": "Chicken Rice Bowl",
+      "price_cents": 1199,
+      "available": true
+    },
+    {
+      "item_id": "salad",
+      "name": "Garden Salad",
+      "price_cents": 699,
+      "available": true
+    },
+    {
+      "item_id": "lemonade",
+      "name": "Lemonade",
+      "price_cents": 349,
+      "available": false
+    }
+  ]
+}

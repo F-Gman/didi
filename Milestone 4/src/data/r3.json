@@ -1,0 +1,25 @@
+{
+  "restaurant_id": "r3",
+  "name": "DiDi Sushi Kitchen",
+  "address": "300 Sushi Road",
+  "menu": [
+    {
+      "item_id": "roll",
+      "name": "California Roll",
+      "price_cents": 999,
+      "available": true
+    },
+    {
+      "item_id": "salmon",
+      "name": "Salmon Bowl",
+      "price_cents": 1499,
+      "available": true
+    },
+    {
+      "item_id": "tea",
+      "name": "Green Tea",
+      "price_cents": 299,
+      "available": true
+    }
+  ]
+}

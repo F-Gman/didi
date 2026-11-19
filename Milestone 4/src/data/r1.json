@@ -1,0 +1,25 @@
+{
+  "restaurant_id": "r1",
+  "name": "DiDi Express Burger",
+  "address": "100 Burger Street",
+  "menu": [
+    {
+      "item_id": "burger",
+      "name": "Bacon Cheese Burger",
+      "price_cents": 1299,
+      "available": true
+    },
+    {
+      "item_id": "fries",
+      "name": "American Fries",
+      "price_cents": 399,
+      "available": true
+    },
+    {
+      "item_id": "shake",
+      "name": "Vanilla Milkshake",
+      "price_cents": 549,
+      "available": true
+    }
+  ]
+}
