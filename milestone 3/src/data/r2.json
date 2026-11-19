@@ -1,0 +1,25 @@
+{
+  "restaurant_id": "r2",
+  "name": "DiDi Pizza House",
+  "address": "200 Pizza Avenue",
+  "menu": [
+    {
+      "item_id": "pizza",
+      "name": "Margherita Pizza",
+      "price_cents": 1599,
+      "available": true
+    },
+    {
+      "item_id": "wings",
+      "name": "Chicken Wings",
+      "price_cents": 899,
+      "available": true
+    },
+    {
+      "item_id": "soda",
+      "name": "Cola",
+      "price_cents": 249,
+      "available": true
+    }
+  ]
+}

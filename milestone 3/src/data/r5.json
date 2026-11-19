@@ -1,0 +1,25 @@
+{
+  "restaurant_id": "r5",
+  "name": "DiDi Noodle Shop",
+  "address": "500 Noodle Drive",
+  "menu": [
+    {
+      "item_id": "noodles",
+      "name": "Beef Noodle Soup",
+      "price_cents": 1399,
+      "available": true
+    },
+    {
+      "item_id": "dumplings",
+      "name": "Steamed Dumplings",
+      "price_cents": 799,
+      "available": true
+    },
+    {
+      "item_id": "water",
+      "name": "Bottled Water",
+      "price_cents": 199,
+      "available": true
+    }
+  ]
+}
